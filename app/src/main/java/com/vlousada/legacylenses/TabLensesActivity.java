@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.widget.Toast;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.widget.ListView;
 import android.widget.AdapterView;
 import android.view.View;
@@ -15,8 +14,7 @@ import com.github.ma1co.pmcademo.app.Logger;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -124,24 +122,6 @@ public class TabLensesActivity extends BaseActivity{
             XmlContentHandler = new ArrayList<ParsedDataSet>();
             data_list1 = new ArrayList<ParsedDataSet>(); //lenses
 
-            // initialize our input source variable
-            InputSource inputSource = null;
-
-            // XML from sdcard
-            File extStore = Environment.getExternalStorageDirectory();
-            File myFile = new File(extStore.getAbsolutePath() + "/LLEGACY/PROFILES.XML");
-            // make sure profiles.xml is in your root SD card directory LLEGACY
-            if(myFile.exists()) {
-                File xmlFile = new File(Environment.getExternalStorageDirectory() + "/LLEGACY/PROFILES.XML");
-                FileInputStream xmlFileInputStream = new FileInputStream(xmlFile);
-                inputSource = new InputSource(xmlFileInputStream);
-                }
-            else {
-                    // XML from assets folder
-                inputSource = new InputSource(getAssets().open("profiles.xml"));
-            }
-
-
             // instantiate SAX parser
             SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
             SAXParser saxParser = saxParserFactory.newSAXParser();
@@ -154,8 +134,13 @@ public class TabLensesActivity extends BaseActivity{
             XmlContentHandler xmlContentHandler = new XmlContentHandler();
             xmlReader.setContentHandler(xmlContentHandler);
 
-            // parse the XML input source
-            xmlReader.parse(inputSource);
+            // Load an updated SD profile into private storage, or use the cached copy.
+            InputStream xmlStream = LLUtils.openProfilesXml(TabLensesActivity.this);
+            try {
+                xmlReader.parse(new InputSource(xmlStream));
+            } finally {
+                xmlStream.close();
+            }
 
             // put the parsed data to a List
             List<ParsedDataSet> parsedDataSet = xmlContentHandler.getParsedData();

@@ -1,6 +1,7 @@
 package com.vlousada.legacylenses;
 
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
 import android.view.View;
@@ -14,6 +15,12 @@ import com.sony.scalar.sysutil.ScalarProperties;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import org.xml.sax.Attributes;
+import org.xml.sax.helpers.DefaultHandler;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,6 +118,139 @@ public class LLUtils {
         return android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);
     }
 
+
+    /**
+     * Synchronize LLEGACY/PROFILES.XML into app-private storage, then open it.
+     * Content comparison handles cards with stale or unreliable timestamps.
+     * Priority: updated SD -> last valid private copy -> APK assets.
+     * Both profile tabs call this method from their background thread.
+     */
+    public static synchronized InputStream openProfilesXml(Context context) throws IOException {
+        File dir = context.getFilesDir();
+        File cache = new File(dir, "profiles.xml");
+        File backup = new File(dir, "profiles.xml.bak");
+        File staging = new File(dir, "profiles.xml.tmp");
+        File sd = new File(Environment.getExternalStorageDirectory(), "LLEGACY/PROFILES.XML");
+
+        // Recover from an interrupted cache replacement.
+        if (backup.exists()) {
+            if (!cache.exists() || !isValidProfilesXml(cache)) {
+                if (cache.exists() && !cache.delete()) {
+                    Logger.error("Profiles: cannot remove invalid internal cache");
+                } else if (!backup.renameTo(cache)) {
+                    Logger.error("Profiles: cannot restore internal backup");
+                }
+            } else if (!backup.delete()) {
+                Logger.error("Profiles: cannot remove old backup");
+            }
+        }
+
+        if (sd.isFile()) {
+            try {
+                if (!cache.isFile() || !sameFileContents(sd, cache)) {
+                    copyFile(sd, staging);
+                    if (!isValidProfilesXml(staging)) {
+                        throw new IOException("SD profiles XML is invalid");
+                    }
+                    // Move the existing cache aside before installing the new one.
+                    if (cache.exists()) {
+                        if (backup.exists() && !backup.delete()) {
+                            throw new IOException("Cannot remove stale profiles backup");
+                        }
+                        if (!cache.renameTo(backup)) {
+                            throw new IOException("Cannot back up internal profiles");
+                        }
+                    }
+                    if (!staging.renameTo(cache)) {
+                        if (backup.exists() && !backup.renameTo(cache)) {
+                            Logger.error("Profiles: failed to restore backup");
+                        }
+                        throw new IOException("Cannot install internal profiles");
+                    }
+                    if (backup.exists() && !backup.delete()) {
+                        Logger.error("Profiles: old backup not removed");
+                    }
+                    Logger.info("Profiles: internal cache updated from SD, modified="
+                            + sd.lastModified() + ", size=" + sd.length());
+                }
+            } catch (Exception e) {
+                Logger.error("Profiles: SD import failed: " + e.toString());
+            } finally {
+                // A failed import must not leave a partial staging file.
+                if (staging.exists() && !staging.delete()) {
+                    Logger.error("Profiles: cannot remove staging file");
+                }
+            }
+        }
+
+        if (cache.isFile() && isValidProfilesXml(cache)) {
+            return new FileInputStream(cache);
+        }
+        Logger.info("Profiles: using default assets (no valid internal copy)");
+        return context.getAssets().open("profiles.xml");
+    }
+
+    private static boolean sameFileContents(File first, File second) throws IOException {
+        if (first.length() != second.length()) return false;
+        InputStream a = null;
+        InputStream b = null;
+        try {
+            a = new FileInputStream(first);
+            b = new FileInputStream(second);
+            int x;
+            while ((x = a.read()) != -1) {
+                if (x != b.read()) return false;
+            }
+            return b.read() == -1;
+        } finally {
+            if (a != null) a.close();
+            if (b != null) b.close();
+        }
+    }
+
+    private static void copyFile(File from, File to) throws IOException {
+        FileInputStream in = null;
+        FileOutputStream out = null;
+        try {
+            in = new FileInputStream(from);
+            out = new FileOutputStream(to);
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = in.read(buffer)) != -1) {
+                out.write(buffer, 0, count);
+            }
+            out.flush();
+            out.getFD().sync();
+        } finally {
+            if (in != null) in.close();
+            if (out != null) out.close();
+        }
+    }
+
+    /** Check XML well-formedness and recognize at least one lens/special entry. */
+    private static boolean isValidProfilesXml(File file) {
+        if (!file.isFile() || file.length() == 0) return false;
+        try {
+            final boolean[] hasRoot = { false };
+            final boolean[] hasEntry = { false };
+            SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+            parser.parse(file, new DefaultHandler() {
+                @Override
+                public void startElement(String uri, String localName, String qName,
+                                         Attributes attributes) {
+                    String tag = localName.length() == 0 ? qName : localName;
+                    if ("Contents".equalsIgnoreCase(tag)) hasRoot[0] = true;
+                    if ("Lens".equalsIgnoreCase(tag) || "Special".equalsIgnoreCase(tag)) {
+                        hasEntry[0] = true;
+                    }
+                }
+            });
+            return hasRoot[0] && hasEntry[0];
+        } catch (Exception e) {
+            Logger.error("Profiles: XML validation failed: " + e.toString());
+            return false;
+        }
+    }
 
     //log in TEXTVIEW located at MainActivity
     public static void log(final String str)
