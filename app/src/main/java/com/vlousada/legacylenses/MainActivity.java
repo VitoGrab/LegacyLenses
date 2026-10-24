@@ -1151,7 +1151,7 @@ public class MainActivity extends BaseActivity implements SurfaceHolder.Callback
         recDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
 
         //save infos into LOG.TXT
-        Logger.exif(m_pictureID + ";" + recDate + ";" + shutterSpeed + ";" + legacyLensAperture + ";" + isoRatings + ";" + legacyLensName + ";" + legacyLensSpecial);
+        Logger.exif(m_pictureID + ";" + recDate + ";" + shutterSpeed + ";" + legacyLensAperture + ";" +legacyLensFocal + ";" + isoRatings + ";" + legacyLensName + ";" + legacyLensSpecial);
 
     }
 
