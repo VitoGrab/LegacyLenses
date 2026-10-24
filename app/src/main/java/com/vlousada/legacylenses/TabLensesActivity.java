@@ -129,10 +129,10 @@ public class TabLensesActivity extends BaseActivity{
 
             // XML from sdcard
             File extStore = Environment.getExternalStorageDirectory();
-            File myFile = new File(extStore.getAbsolutePath() + "/LLEGACY/profiles.xml");
+            File myFile = new File(extStore.getAbsolutePath() + "/LLEGACY/PROFILES.XML");
             // make sure profiles.xml is in your root SD card directory LLEGACY
             if(myFile.exists()) {
-                File xmlFile = new File(Environment.getExternalStorageDirectory() + "/LLEGACY/profiles.xml");
+                File xmlFile = new File(Environment.getExternalStorageDirectory() + "/LLEGACY/PROFILES.XML");
                 FileInputStream xmlFileInputStream = new FileInputStream(xmlFile);
                 inputSource = new InputSource(xmlFileInputStream);
                 }

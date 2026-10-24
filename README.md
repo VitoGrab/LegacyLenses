@@ -37,9 +37,9 @@ Exposure info (5) & Histogram (6). Use ![up](https://cloud.githubusercontent.com
 ### LENS (& Special) Profiles ###
 - **built-in lens profiles**: App has a *default sample* lens database built-in, in case no other input (from user) is provided.
 
-- **USER PROFILES**: App uses a XML database. Check the schema and sample file. **User can use his OWN 'profiles.xml'** saved into ***SDCard/LLEGACY*** folder.
+- **USER PROFILES**: App uses a XML database. Check the schema and sample file. **User can use his OWN 'PROFILES.XML'** saved into ***SDCard/LLEGACY*** folder. Mind that file need to be named with all caps to be properly read by app.
     * Schema - take a look [here](https://github.com/vlousada/LegacyLenses22/blob/master/help/schema.xml). 
-    * Sample - please chech [here](https://github.com/vlousada/LegacyLenses22/blob/master/help/profiles.xml). Use some Lang Highlight Editor, such as [Notepad++](https://notepad-plus-plus.org) to edit.
+    * Sample - please chech [here](https://github.com/vlousada/LegacyLenses22/blob/master/help/PROFILES.XML). Use some Lang Highlight Editor, such as [Notepad++](https://notepad-plus-plus.org) to edit.
     
 - **PROFILE CREATION**] - check the corresponding XML blocks for *LENSES* and for *SPECIAL* items. Copy one block and paste it below keeping the struture. Edit that block with necessary data for your legacy lens... 
    1. ***\<name>Name_of_the_lens_01\</name>***: replace 'Name_of_the_lens_01' text for your lens.
