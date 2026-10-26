@@ -33,7 +33,7 @@ public class BaseActivity extends Activity {
 
     @Override
     protected void onResume() {
-        Logger.info("Resume " + getComponentName().getClassName());
+        Logger.debug("Resume " + getComponentName().getClassName());
         super.onResume();
 
         setColorDepth(true);
@@ -51,7 +51,7 @@ public class BaseActivity extends Activity {
 
     @Override
     protected void onPause() {
-        Logger.info("Pause " + getComponentName().getClassName());
+        Logger.debug("Pause " + getComponentName().getClassName());
         super.onPause();
 
         setColorDepth(false);
